@@ -21,11 +21,11 @@ type Product struct {
 	URL   string `json:"url"`
 }
 
-func parseCategory(url string) ([]Product, error) {
+func parseCategory(url string, urlSite string) ([]Product, error) {
 
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"),
-		chromedp.Flag("headless", false), // Отключите headless для отладки
+		chromedp.Flag("headless", false),
 	)
 
 	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
@@ -64,8 +64,6 @@ func parseCategory(url string) ([]Product, error) {
 		if priceElements.Length() > 2 {
 			secondPriceElement := priceElements.Eq(2)
 			price = secondPriceElement.Text()
-
-			fmt.Println("Название:")
 		} else {
 			price = priceElements.Eq(0).Text()
 		}
@@ -73,12 +71,9 @@ func parseCategory(url string) ([]Product, error) {
 		re := regexp.MustCompile(`\d+`)
 		price = re.FindString(price)
 
-		fmt.Println("Название:", name)
-		fmt.Println("Цена:", price)
-
 		parent := s.Parent()
 		url := parent.AttrOr("href", "")
-		url = "https://samokat.ru" + url
+		url = fmt.Sprintf("https://%s%s", urlSite, url)
 
 		name = strings.TrimSpace(name)
 
@@ -130,7 +125,7 @@ func main() {
 
 	categoryURL := fmt.Sprintf("https://%s/category/%s", *siteFlag, *categoryFlag)
 
-	products, err := parseCategory(categoryURL)
+	products, err := parseCategory(categoryURL, *siteFlag)
 	if err != nil {
 		log.Fatalf("Ошибка при парсинге: %v", err)
 	}
